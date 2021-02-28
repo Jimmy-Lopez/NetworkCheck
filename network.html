@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="ISO-8859-1">
+    <title></title>
+    <link rel="icon"
+        href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQYV2P4z8DwHwAFAAH/plybXQAAAABJRU5ErkJggg==">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<body>
+    <div style="display: table; width: 100%; height: 100vh;">
+        <div style="display: table-cell; font-size: xxx-large; text-shadow: 5px 5px 10px gray">
+            <svg height="100%" width="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <text id="text" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">OFF</text>
+            </svg>
+        </div>
+    </div>
+    <script>
+        const CONFIG = { TIME_OUT: 500, INTERVAL: 750 };
+
+        const URL_PARAMETERS = new URLSearchParams(document.location.search);
+        let reload = false;
+        Object.getOwnPropertyNames(CONFIG).forEach(key => {
+            if (URL_PARAMETERS.has(key))
+                CONFIG[key] = parseInt(URL_PARAMETERS.get(key));
+            else {
+                reload = true;
+            }
+        });
+        if (reload)
+            window.location.replace(location.protocol + "//" + location.host + location.pathname +
+                "?" + Object.getOwnPropertyNames(CONFIG).map(key => key + "=" + CONFIG[key]).join("&"));
+
+        function displayStatus(ON) {
+            const statusText = arguments.length === 0 ? "?" : ON ? "ON" : "OFF";
+            document.title = statusText;
+            document.getElementById("text").innerHTML = statusText;
+            const statusColor = arguments.length === 0 ? "white" : ON ? "#00FF00" : "#FF0000";
+            document.body.style.backgroundColor = statusColor;
+            const statusPixel = arguments.length === 0 ? "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII=" : ON ? "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQYV2Ng+M/wHwAEAQH/Xi7hpQAAAABJRU5ErkJggg==" : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQYV2P4z8DwHwAFAAH/plybXQAAAABJRU5ErkJggg==";
+            document.querySelector("link[rel~='icon']").href = statusPixel;
+        }
+        displayStatus();
+
+        function checkNetwork() {
+            const timeoutController = new AbortController();
+            const timeoutTimer = setTimeout(() => timeoutController.abort(), CONFIG.TIME_OUT);
+            fetch(location.href,
+                { method: "HEAD", cache: "no-store", signal: timeoutController.signal })
+                .then(response => {
+                    displayStatus(true);
+                    console.debug("Network seems on. HTTP response code: ", response.status);
+                })
+                .catch(error => {
+                    displayStatus(false);
+                    console.debug("Network seems off. Error: ", error);
+                })
+                .finally(() => {
+                    clearTimeout(timeoutTimer);
+                });
+        }
+        setInterval(checkNetwork, CONFIG.INTERVAL);
+    </script>
+</body>
+
+</html>
